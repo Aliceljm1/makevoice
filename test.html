@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音频生成器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #ff6e7f, #bfe9ff);
+            overflow-y: auto;
+            padding: 20px; 
+        }
+        .container {
+            text-align: center; 
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+            margin-bottom: 20px; 
+        }
+        .volume-box, .instructions {
+            text-align: left; 
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+            margin-bottom: 20px; 
+        }
+        label {
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        input[type="number"], select, button {
+            margin-bottom: 10px;
+            padding: 8px; 
+            font-size: 16px;
+            border: 1px solid #ccc; /* 添加边框 */
+            border-radius: 5px; /* 圆角 */
+            width: 80px; /* 统一宽度 */
+        }
+        input[type="range"] {
+            -webkit-appearance: none; /* 取消默认样式 */
+            height: 15px; /* 增加滑动条高度 */
+            background: #ddd; /* 背景颜色 */
+            border-radius: 5px; /* 圆角 */
+            outline: none; /* 取消焦点 */
+            margin-bottom: 20px; /* 增加滑动条与其他元素的间距 */
+        }
+        input[type="range"].wide {
+            width: 80%; /* 上方滑动条宽度 */
+        }
+        input[type="range"].narrow {
+            margin-top: 20px;
+            width: 40%; /* 总体音量控制和左右声道控制宽度 */
+        }
+        button {
+            cursor: pointer;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            padding: 5px 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: grey;
+        }
+        .frequency-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 10px 0;
+        }
+        .volume-control, .stereo-control {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* 左对齐 */
+            margin-top: 10px;
+        }
+        .volume-percentage, .stereo-percentage {
+            margin-left: 10px;
+        }
+
+        /* 美化滑动条 */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; /* 取消默认样式 */
+            appearance: none; /* 取消默认样式 */
+            width: 20px; /* 滑动块宽度 */
+            height: 20px; /* 滑动块高度 */
+            border-radius: 50%; /* 圆形 */
+            background: #4CAF50; /* 滑动块颜色 */
+            cursor: pointer; /* 鼠标样式 */
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px; /* 滑动块宽度 */
+            height: 20px; /* 滑动块高度 */
+            border-radius: 50%; /* 圆形 */
+            background: #4CAF50; /* 滑动块颜色 */
+            cursor: pointer; /* 鼠标样式 */
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            border-radius: 5px; /* 圆角 */
+        }
+        input[type="range"]::-moz-range-track {
+            border-radius: 5px; /* 圆角 */
+        }
+
+        /* 使用说明的样式 */
+        .instructions {
+            max-height: 150px;
+            overflow-y: auto;
+            width: 90%; /* 使用说明宽度 */
+            margin: 0 auto; /* 中心对齐 */
+        }
+        .instructions::-webkit-scrollbar {
+            width: 8px;
+        }
+        .instructions::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 10px;
+        }
+
+        /* 特殊样式 */
+        select {
+            width: 120px; /* 加宽波形下拉框 */
+        }
+        #customMultiplier {
+            width: 60px; /* 缩短自定义倍率输入框 */
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>音频生成器</h1>
+    <div class="frequency-input-container">
+        <label for="frequency">当前频率（Hz）：</label>
+        <input type="number" id="frequencyInput" min="20" max="20000" value="440">
+        <span>Hz</span> <!-- 将"Hz"文字放在输入框后面 -->
+        <input type="range" id="frequency" class="wide" min="20" max="20000" value="440">
+    </div>
+
+    <div>
+        <label for="minRange">最小频率:</label>
+        <input type="number" id="minRange" value="20">
+        <span>Hz</span><br>
+        <label for="maxRange">最大频率:</label>
+        <input type="number" id="maxRange" value="20000" max="20000"> <!-- 设置最大输入值为20000 -->
+        <span>Hz</span><br>
+        <label for="stepIncrease">单次调节频率:</label>
+        <input type="number" id="stepIncrease" value="100">
+        <span>Hz</span>
+    </div>
+
+    <div class="frequency-buttons">
+        <button id="multiply1_2">x1/2</button>
+        <button id="multiply2_3">x2/3</button>
+        <button id="multiply1_5">x1.5</button>
+        <button id="multiply2">x2</button>
+    </div>
+
+    <div>
+        <label for="customMultiplier">自定义倍率:</label>
+        <input type="number" id="customMultiplier" min="0.1" value="1">
+        <button id="applyCustomMultiplier">应用</button>
+    </div>
+
+    <label for="waveform">波形输出:</label>
+    <select id="waveform">
+        <option value="sine">正弦波</option>
+        <option value="square">方波</option>
+        <option value="sawtooth">锯齿波</option>
+        <option value="triangle">三角波</option>
+    </select>
+    <div class="play-stop-buttons"> <!-- 新增一个 div 容器 -->
+    <button id="playButton">播放</button>
+    <button id="stopButton" disabled>停止</button>
+    </div>
+</div>
+
+<div class="volume-box">
+    <div class="volume-control">
+        <label for="volumeSlider">音量控制:</label>
+        <input type="range" id="volumeSlider" class="narrow" min="0" max="100" value="100">
+        <span id="volumeDisplay" class="volume-percentage">100%</span>
+        <button id="defaultVolumeButton" style="margin-left: 10px;">默认值</button> <!-- 默认值按钮 -->
+    </div>
+
+    <div class="stereo-control">
+        <label for="stereoBalance">声道控制:</label>
+        <input type="range" id="stereoBalance" class="narrow" min="-1" max="1" step="0.01" value="0">
+        <span id="stereoBalanceDisplay" class="stereo-percentage">R 100% - L 100%</span>
+        <button id="defaultStereoButton" style="margin-left: 10px;">默认值</button> <!-- 默认值按钮 -->
+    </div>
+</div>
+
+<div class="instructions">
+    <p style="font-size: larger; font-weight: bold;">使用说明:</p> <!-- 加大加粗 -->
+    <p>1. 在“当前频率”输入框输入声音频率值；</p>
+    <p>2. 输入框下滑动条用于快速拖动调节声音频率；</p>
+    <p>3. “最小/最大频率”用于设置滑动条频率调节的范围；</p>
+    <p>4. 设置单次调节频率值，后可用←键或→键减小或增大频率；</p>
+    <p>5. 通过倍率按键或自定义倍率成倍率调节声音频率；</p>
+    <p>6. 下拉波形输出框，选择输出的波形；</p>
+    <p>7. 点击“播放”和“停止”按钮控制声音的开关；</p>
+    <p>8. 使用音量控制滑动条调整总体音量；</p>
+    <p>9. 使用左右声道控制来调整左右声道的音量；</p>
+    <p>10使用空格键播放或停止音频，左右箭头键调整频率。</p>
+</div>
+
+<script>
+    let audioContext;
+    let oscillator;
+    let gainNode;
+    let stereoPanner;
+
+    const frequencyInput = document.getElementById('frequencyInput');
+    const frequencySlider = document.getElementById('frequency');
+    const minRangeInput = document.getElementById('minRange');
+    const maxRangeInput = document.getElementById('maxRange');
+    const stepIncreaseInput = document.getElementById('stepIncrease');
+    const playButton = document.getElementById('playButton');
+    const stopButton = document.getElementById('stopButton');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeDisplay = document.getElementById('volumeDisplay');
+    const stereoBalanceSlider = document.getElementById('stereoBalance');
+    const stereoBalanceDisplay = document.getElementById('stereoBalanceDisplay');
+    const applyCustomMultiplierButton = document.getElementById('applyCustomMultiplier');
+    const customMultiplierInput = document.getElementById('customMultiplier');
+
+    function updateFrequencyRange() {
+        const minFreq = parseInt(minRangeInput.value);
+        const maxFreq = parseInt(maxRangeInput.value);
+        frequencySlider.min = minFreq;
+        frequencySlider.max = maxFreq;
+
+        // 如果当前频率超出范围，重置到范围内
+        if (parseInt(frequencyInput.value) < minFreq) {
+            frequencyInput.value = minFreq;
+            frequencySlider.value = minFreq;
+        } else if (parseInt(frequencyInput.value) > maxFreq) {
+            frequencyInput.value = maxFreq;
+            frequencySlider.value = maxFreq;
+        }
+    }
+
+    // 初始化频率范围
+    minRangeInput.addEventListener('input', updateFrequencyRange);
+    maxRangeInput.addEventListener('input', updateFrequencyRange);
+
+    // 频率滑动条和输入框同步
+    frequencySlider.addEventListener('input', function() {
+        frequencyInput.value = frequencySlider.value;
+        if (oscillator) {
+            oscillator.frequency.setValueAtTime(frequencyInput.value, audioContext.currentTime);
+        }
+    });
+
+    frequencyInput.addEventListener('input', function() {
+        frequencySlider.value = frequencyInput.value;
+        if (oscillator) {
+            oscillator.frequency.setValueAtTime(frequencyInput.value, audioContext.currentTime);
+        }
+    });
+
+    playButton.addEventListener('click', function() {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        oscillator = audioContext.createOscillator();
+        oscillator.type = document.getElementById('waveform').value;
+        oscillator.frequency.setValueAtTime(frequencyInput.value, audioContext.currentTime);
+
+        // 创建增益节点 (控制音量)
+        gainNode = audioContext.createGain();
+        gainNode.gain.value = volumeSlider.value / 100;
+
+        // 创建立体声声像器 (控制左右声道平衡)
+        stereoPanner = audioContext.createStereoPanner();
+        stereoPanner.pan.value = stereoBalanceSlider.value;
+
+        // 连接各节点
+        oscillator.connect(stereoPanner).connect(gainNode).connect(audioContext.destination);
+        oscillator.start();
+
+        playButton.disabled = true;
+        stopButton.disabled = false;
+    });
+
+    stopButton.addEventListener('click', function() {
+        if (oscillator) {
+            oscillator.stop();
+            oscillator.disconnect();
+        }
+        playButton.disabled = false;
+        stopButton.disabled = true;
+    });
+
+    // 音量控制
+    volumeSlider.addEventListener('input', function() {
+        if (gainNode) {
+            gainNode.gain.value = volumeSlider.value / 100;
+        }
+        volumeDisplay.textContent = `${volumeSlider.value}%`;
+    });
+  // 恢复总体音量默认值的按钮事件
+  document.getElementById('defaultVolumeButton').addEventListener('click', function() {
+      volumeSlider.value = 100;
+      volumeDisplay.textContent = '100%';
+      gainNode.gain.value = 1;
+  });
+    // 键盘事件处理
+    document.addEventListener('keydown', function(event) {
+        if (event.code === 'Space') {
+            if (playButton.disabled) {
+                stopButton.click();
+            } else {
+                playButton.click();
+            }
+        } else if (event.code === 'ArrowLeft') {
+            const stepIncrease = parseInt(stepIncreaseInput.value);
+            frequencyInput.value = Math.max(minRangeInput.value, frequencyInput.value - stepIncrease);
+            frequencySlider.value = frequencyInput.value;
+            if (oscillator) {
+                oscillator.frequency.setValueAtTime(frequencyInput.value, audioContext.currentTime);
+            }
+        } else if (event.code === 'ArrowRight') {
+            const stepIncrease = parseInt(stepIncreaseInput.value);
+            const newFrequency = parseInt(frequencyInput.value) + stepIncrease;
+            frequencyInput.value = Math.min(maxRangeInput.value, newFrequency);
+            frequencySlider.value = frequencyInput.value;
+            if (oscillator) {
+                oscillator.frequency.setValueAtTime(frequencyInput.value, audioContext.currentTime);
+            }
+        }
+    });
+
+    // 倍率按钮功能
+    document.getElementById('multiply1_2').addEventListener('click', function() {
+        frequencyInput.value = Math.max(minRangeInput.value, frequencyInput.value / 2);
+        frequencySlider.value = frequencyInput.value;
+        if (oscillator) {
+            oscillator.frequency.setValueAtTime(frequencyInput.value, audioContext.currentTime);
+        }
+    });
+    
+    document.getElementById('multiply2_3').addEventListener('click', function() {
+        frequencyInput.value = Math.max(minRangeInput.value, frequencyInput.value * 2 / 3);
+        frequencySlider.value = frequencyInput.value;
+        if (oscillator) {
+            oscillator.frequency.setValueAtTime(frequencyInput.value, audioContext.currentTime);
+        }
+    });
+
+    document.getElementById('multiply1_5').addEventListener('click', function() {
+        frequencyInput.value = Math.min(maxRangeInput.value, frequencyInput.value * 1.5);
+        frequencySlider.value = frequencyInput.value;
+        if (oscillator) {
+            oscillator.frequency.setValueAtTime(frequencyInput.value, audioContext.currentTime);
+        }
+    });
+
+    document.getElementById('multiply2').addEventListener('click', function() {
+        frequencyInput.value = Math.min(maxRangeInput.value, frequencyInput.value * 2);
+        frequencySlider.value = frequencyInput.value;
+        if (oscillator) {
+            oscillator.frequency.setValueAtTime(frequencyInput.value, audioContext.currentTime);
+        }
+    });
+
+    // 应用自定义倍率
+    applyCustomMultiplierButton.addEventListener('click', function() {
+        const customMultiplier = parseFloat(customMultiplierInput.value);
+        frequencyInput.value = Math.min(maxRangeInput.value, frequencyInput.value * customMultiplier);
+        frequencySlider.value = frequencyInput.value;
+        if (oscillator) {
+            oscillator.frequency.setValueAtTime(frequencyInput.value, audioContext.currentTime);
+        }
+    });
+
+    // 左右声道音量控制
+    stereoBalanceSlider.addEventListener('input', function() {
+        const balanceValue = parseFloat(stereoBalanceSlider.value);
+        if (balanceValue < 0) {
+            stereoPanner.pan.setValueAtTime(balanceValue, audioContext.currentTime);
+            stereoBalanceDisplay.textContent = `R ${Math.round((1 + balanceValue) * 100)}% - L 100%`;
+        } else {
+            stereoPanner.pan.setValueAtTime(balanceValue, audioContext.currentTime);
+            stereoBalanceDisplay.textContent = `R 100% - L ${Math.round((1 - balanceValue) * 100)}%`;
+        }
+    });
+  // 恢复左右声道默认值的按钮事件
+  document.getElementById('defaultStereoButton').addEventListener('click', function() {
+      stereoBalanceSlider.value = 0;
+      stereoBalanceDisplay.textContent = 'R 100% - L 100%';
+      stereoPanner.pan.setValueAtTime(0, audioContext.currentTime);
+    });
+</script>
+</body>
+</html>
